@@ -59,13 +59,18 @@ export class RinnaiControlrPlatformAccessory {
             .setCharacteristic(this.platform.Characteristic.Model, this.device.model || UNKNOWN)
             .setCharacteristic(this.platform.Characteristic.SerialNumber, this.device.dsn || UNKNOWN);
 
-        this.service = this.accessory.getService(this.platform.Service.Thermostat)
-            || this.accessory.addService(this.platform.Service.Thermostat);
-        this.service.setCharacteristic(this.platform.Characteristic.Name, this.device.device_name);
+        // Enable temperature control
+        if (!this.platform.getConfig().recirculationOnly) {
+            this.service = this.accessory.getService(this.platform.Service.Thermostat)
+                || this.accessory.addService(this.platform.Service.Thermostat);
+            this.service.setCharacteristic(this.platform.Characteristic.Name, this.device.device_name);
 
-        this.bindTemperature();
-        this.bindRecirculation();
-        this.bindStaticValues();
+            this.bindTemperature();
+            this.bindStaticValues();
+        }
+
+        this.bindRecirculation(this.platform.getConfig().recirculationOnly);
+
     }
 
     bindTemperature() {
@@ -97,7 +102,7 @@ export class RinnaiControlrPlatformAccessory {
             });
     }
 
-    bindRecirculation() {
+    bindRecirculation(isPrimary: boolean) {
         if (this.accessory.context.info?.recirculation_capable === API_VALUE_TRUE) {
             this.platform.log.debug(`Device ${this.device.dsn} has recirculation capabilities. Adding service.`);
             const recircService = this.accessory.getService(RECIRC_SERVICE_NAME) ||
@@ -106,6 +111,9 @@ export class RinnaiControlrPlatformAccessory {
                 .onSet(this.setRecirculateActive.bind(this));
             recircService.updateCharacteristic(this.platform.Characteristic.On,
                 this.device.shadow.recirculation_enabled);
+            if (isPrimary) {
+                recircService.setCharacteristic(this.platform.Characteristic.Name, this.device.device_name);
+            }
         } else {
             this.platform.log.debug(`Device ${this.device.dsn} does not support recirculation.`);
         }

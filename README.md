@@ -23,7 +23,8 @@ Example configuration is below.  See [config.schema.json](./blob/master/config.s
         "recirculationDuration": 15,
         "temperatureUnits": "F",
         "minimumTemperature": 120,
-        "maximumTemperature": 140
+        "maximumTemperature": 140,
+        "recirculationOnly": false
     }
 ]
 ```

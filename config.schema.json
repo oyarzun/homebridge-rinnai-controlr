@@ -48,6 +48,13 @@
         "type": "number",
         "required": true,
         "default": "140"
+      },
+      "recirculationOnly": {
+        "title": "Recirculation Mode",
+        "description": "Only bind the recirculation switch to HomeKit. This disables temperature control",
+        "type": "boolean",
+        "required": true,
+        "default": "false"
       }
     }
   }
