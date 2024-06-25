@@ -59,6 +59,8 @@ export class RinnaiControlrPlatformAccessory {
             .setCharacteristic(this.platform.Characteristic.Model, this.device.model || UNKNOWN)
             .setCharacteristic(this.platform.Characteristic.SerialNumber, this.device.dsn || UNKNOWN);
 
+        const recirculationService = this.bindRecirculation(this.platform.getConfig().recirculationOnly);
+
         // Enable temperature control
         if (!this.platform.getConfig().recirculationOnly) {
             this.service = this.accessory.getService(this.platform.Service.Thermostat)
@@ -67,10 +69,9 @@ export class RinnaiControlrPlatformAccessory {
 
             this.bindTemperature();
             this.bindStaticValues();
+        } else {
+            this.service = recirculationService!;
         }
-
-        this.bindRecirculation(this.platform.getConfig().recirculationOnly);
-
     }
 
     bindTemperature() {
@@ -102,7 +103,7 @@ export class RinnaiControlrPlatformAccessory {
             });
     }
 
-    bindRecirculation(isPrimary: boolean) {
+    bindRecirculation(isPrimary: boolean): Service | undefined {
         if (this.accessory.context.info?.recirculation_capable === API_VALUE_TRUE) {
             this.platform.log.debug(`Device ${this.device.dsn} has recirculation capabilities. Adding service.`);
             const recircService = this.accessory.getService(RECIRC_SERVICE_NAME) ||
@@ -114,8 +115,10 @@ export class RinnaiControlrPlatformAccessory {
             if (isPrimary) {
                 recircService.setCharacteristic(this.platform.Characteristic.Name, this.device.device_name);
             }
+            return recircService;
         } else {
             this.platform.log.debug(`Device ${this.device.dsn} does not support recirculation.`);
+            return undefined;
         }
     }
 
