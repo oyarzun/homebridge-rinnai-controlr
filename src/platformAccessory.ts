@@ -67,13 +67,19 @@ export class RinnaiControlrPlatformAccessory {
             .setCharacteristic(this.platform.Characteristic.Model, this.accessory.context.model || UNKNOWN)
             .setCharacteristic(this.platform.Characteristic.SerialNumber, this.accessory.context.id || UNKNOWN);
 
-        this.service = this.accessory.getService(this.platform.Service.Thermostat)
-            || this.accessory.addService(this.platform.Service.Thermostat);
-        this.service.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device_name);
+        const recirculationService = this.bindRecirculation(this.platform.getConfig().recirculationOnly);
 
-        this.bindTemperature();
-        this.bindRecirculation();
-        this.bindStaticValues();
+        // Enable temperature control
+        if (!this.platform.getConfig().recirculationOnly) {
+            this.service = this.accessory.getService(this.platform.Service.Thermostat)
+                || this.accessory.addService(this.platform.Service.Thermostat);
+            this.service.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device_name);
+
+            this.bindTemperature();
+            this.bindStaticValues();
+        } else {
+            this.service = recirculationService!;
+        }
     }
 
     extractDeviceInfo() {
@@ -137,7 +143,7 @@ export class RinnaiControlrPlatformAccessory {
             });
     }
 
-    bindRecirculation() {
+    bindRecirculation(isPrimary: boolean): Service | undefined {
         if (this.accessory.context.info?.recirculation_capable === API_VALUE_TRUE &&
             this.accessory.context.shadow?.recirculation_not_configured === API_VALUE_FALSE) {
             this.platform.log.debug(`Device ${this.accessory.context.id} has recirculation capabilities. Adding service.`);
@@ -147,8 +153,13 @@ export class RinnaiControlrPlatformAccessory {
                 .onSet(this.setRecirculateActive.bind(this));
             recircService.updateCharacteristic(this.platform.Characteristic.On,
                 this.accessory.context.shadow.recirculation_enabled);
+            if (isPrimary) {
+                recircService.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device_name);
+            }
+            return recircService;
         } else {
-            this.platform.log.debug(`Device ${this.accessory.context.id} does not support recirculation or has not be configured for recirculation.`);
+            this.platform.log.debug(`Device ${this.accessory.context.id} does not support recirculation.`);
+            return undefined;
         }
     }
 

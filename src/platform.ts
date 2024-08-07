@@ -32,6 +32,7 @@ type RinnaiControlrConfig = {
     temperatureUnits: TemperatureUnits;
     minimumTemperature: number;
     maximumTemperature: number;
+    recirculationOnly: boolean;
 } & PlatformConfig;
 
 /**
