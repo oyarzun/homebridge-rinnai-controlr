@@ -16,7 +16,6 @@ import {
     UNKNOWN,
     MAINTENANCE_RETRIEVAL_IDLING_THROTTLE_MILLIS,
     MAINTENANCE_RETRIEVAL_RUNNING_THROTTLE_MILLIS,
-    API_VALUE_FALSE,
     THERMOSTAT_CURRENT_TEMP_STEP_VALUE,
     WATER_HEATER_BIG_STEP_START_IN_F,
     WATER_HEATER_BIG_STEP_VALUE_IN_F,
@@ -94,7 +93,7 @@ export class RinnaiControlrPlatformAccessory {
                 ? fahrenheitToCelsius(this.accessory.context.info.m02_outlet_temperature)
                 : this.accessory.context.info.m02_outlet_temperature;
 
-            this.isRunning = this.accessory.context.info.domestic_combustion == API_VALUE_TRUE;
+            this.isRunning = this.accessory.context.info.domestic_combustion === API_VALUE_TRUE;
         } else {
             this.platform.log.error(`Cannot extract details from ${JSON.stringify(this.accessory.context, null, 2)}`);
         }
@@ -135,7 +134,8 @@ export class RinnaiControlrPlatformAccessory {
 
         this.service.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
             .onGet(this.getIsRunning.bind(this))
-            .updateValue(this.isRunning ? this.platform.Characteristic.CurrentHeatingCoolingState.HEAT : this.platform.Characteristic.CurrentHeatingCoolingState.OFF)
+            .updateValue(this.isRunning ? this.platform.Characteristic.CurrentHeatingCoolingState.HEAT
+                : this.platform.Characteristic.CurrentHeatingCoolingState.OFF)
             .setProps({
                 minValue: this.platform.Characteristic.CurrentHeatingCoolingState.OFF,
                 maxValue: this.platform.Characteristic.CurrentHeatingCoolingState.HEAT,
@@ -194,10 +194,10 @@ export class RinnaiControlrPlatformAccessory {
     accessoryToControllerTemperature(value: number): number {
         let convertedValue: number = this.isFahrenheit ? celsiusToFahrenheit(value) : value;
         if (this.isFahrenheit) {
-            if (convertedValue <  WATER_HEATER_BIG_STEP_START_IN_F) {
-                convertedValue = Math.round(convertedValue / WATER_HEATER_SMALL_STEP_VALUE_IN_F) * WATER_HEATER_SMALL_STEP_VALUE_IN_F
+            if (convertedValue < WATER_HEATER_BIG_STEP_START_IN_F) {
+                convertedValue = Math.round(convertedValue / WATER_HEATER_SMALL_STEP_VALUE_IN_F) * WATER_HEATER_SMALL_STEP_VALUE_IN_F;
             } else {
-                convertedValue = Math.round(convertedValue / WATER_HEATER_BIG_STEP_VALUE_IN_F) * WATER_HEATER_BIG_STEP_VALUE_IN_F
+                convertedValue = Math.round(convertedValue / WATER_HEATER_BIG_STEP_VALUE_IN_F) * WATER_HEATER_BIG_STEP_VALUE_IN_F;
             }
         } else {
             convertedValue = Math.round(convertedValue);
@@ -213,7 +213,8 @@ export class RinnaiControlrPlatformAccessory {
         this.platform.log.info(`Water Heater ${this.accessory.context.id}: HomeKit sets target temperature to ${value}C`);
 
         const convertedValue = this.accessoryToControllerTemperature(value as number);
-        this.platform.log.info(`Water Heater ${this.accessory.context.id}: Sending converted/rounded temperature: ${convertedValue}${this.platform.getConfig().temperatureUnits}`);
+        this.platform.log.info(`Water Heater ${this.accessory.context.id}: Sending converted/rounded temperature: ` +
+                               `${convertedValue}${this.platform.getConfig().temperatureUnits}`);
 
         const state: Record<string, string | number | boolean> = {
             [API_KEY_SET_PRIORITY_STATUS]: true,
