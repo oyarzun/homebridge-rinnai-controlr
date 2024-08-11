@@ -101,7 +101,8 @@ export class RinnaiControlrPlatformAccessory {
         this.platform.log.debug(`Water Heater ${this.accessory.context.id}: ` +
             `targetTemperature = ${this.targetTemperature}, ` +
             `outletTemperature = ${this.outletTemperature}, ` +
-            `isRunning = ${this.isRunning}`);
+            `isRunning = ${this.isRunning} ` +
+            `recirculateActive = ${this.accessory.context.shadow.recirculation_enabled}`);
     }
 
     bindTemperature() {
@@ -144,15 +145,14 @@ export class RinnaiControlrPlatformAccessory {
     }
 
     bindRecirculation(isPrimary: boolean): Service | undefined {
-        if (this.accessory.context.info?.recirculation_capable === API_VALUE_TRUE &&
-            this.accessory.context.shadow?.recirculation_not_configured === API_VALUE_FALSE) {
+        if (this.accessory.context.info?.recirculation_capable === API_VALUE_TRUE) {
             this.platform.log.debug(`Device ${this.accessory.context.id} has recirculation capabilities. Adding service.`);
             const recircService = this.accessory.getService(RECIRC_SERVICE_NAME) ||
                 this.accessory.addService(this.platform.Service.Switch, RECIRC_SERVICE_NAME, `${this.accessory.context.id}-Recirculation`);
             recircService.getCharacteristic(this.platform.Characteristic.On)
-                .onSet(this.setRecirculateActive.bind(this));
-            recircService.updateCharacteristic(this.platform.Characteristic.On,
-                this.accessory.context.shadow.recirculation_enabled);
+                .onSet(this.setRecirculateActive.bind(this))
+                .onGet(this.getRecirculateActive.bind(this));
+            recircService.updateCharacteristic(this.platform.Characteristic.On, this.accessory.context.shadow.recirculation_enabled);
             if (isPrimary) {
                 recircService.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device_name);
             }
@@ -261,5 +261,10 @@ export class RinnaiControlrPlatformAccessory {
     async getIsRunning(): Promise<Nullable<CharacteristicValue>> {
         await this.pollBasicInfo();
         return this.isRunning;
+    }
+
+    async getRecirculateActive(): Promise<Nullable<CharacteristicValue>> {
+        await this.pollBasicInfo();
+        return this.accessory.context.shadow.recirculation_enabled;
     }
 }
