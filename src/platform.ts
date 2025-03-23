@@ -134,7 +134,12 @@ export class RinnaiControlrHomebridgePlatform implements DynamicPlatformPlugin {
             const response = await fetch(url, request);
             this.log.debug(`Set state responded with ${response.status} ${response.statusText}. Body: ${JSON.stringify(response)}`);
         } catch (error) {
+          if (error === 'No current user' || error === 'NotAuthorizedException: Refresh Token has expired') {
+            this.log.info('token expired: reinitialize session');
+            this.initializeSession();
+          } else {
             this.log.error('Caught error setting state.', error);
+          }
         }
     }
 
